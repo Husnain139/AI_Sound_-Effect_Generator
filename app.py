@@ -3,13 +3,12 @@ SFX Studio — local web app for generating sound effects.
 
 The browser talks to this FastAPI server; the server calls the Stable Audio 3
 Space on Hugging Face (via gradio_client) with your HF token, then saves every
-generated sound + a small JSON record (prompt, model, date, license) into ./sounds.
+generated sound + a small JSON record (prompt, model, date, license) via storage.py
+(Vercel Blob when a store is connected, otherwise ./sounds).
 """
 
-import json
 import os
 import re
-import shutil
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +19,8 @@ from fastapi.staticfiles import StaticFiles
 from gradio_client import Client
 from pydantic import BaseModel, Field
 
+from storage import LocalStore, make_store
+
 load_dotenv()
 
 HF_TOKEN = os.getenv("HF_TOKEN") or None
@@ -29,7 +30,7 @@ MODEL_CHOICE = os.getenv("MODEL_CHOICE") or None  # e.g. "small-sfx" — leave e
 
 BASE_DIR = Path(__file__).parent
 SOUNDS_DIR = BASE_DIR / "sounds"
-SOUNDS_DIR.mkdir(exist_ok=True)
+store = make_store(SOUNDS_DIR)
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
 LICENSE_NOTE = "Generated with Stable Audio 3 (Stability AI Community License — see stability.ai/license)"
 
@@ -151,13 +152,6 @@ def _slug(text: str, limit: int = 40) -> str:
     return (s[:limit].rstrip("-")) or "sound"
 
 
-def _read_meta(path: Path):
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-
-
 # -------------------------------------------------------------------- API ---
 
 app = FastAPI(title="SFX Studio")
@@ -189,45 +183,40 @@ def generate(req: GenerateRequest):
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     sound_id = f"{stamp}_{_slug(req.prompt)}"
-    dest = SOUNDS_DIR / f"{sound_id}{src.suffix.lower()}"
-    shutil.copy(src, dest)
 
     meta = {
         "id": sound_id,
         "prompt": req.prompt.strip(),
         "duration": req.duration,
-        "file": dest.name,
-        "url": f"/sounds/{dest.name}",
+        "file": f"{sound_id}{src.suffix.lower()}",
         "space": SPACE_ID,
         "endpoint": api_name,
         "settings": {k: v for k, v in kwargs.items() if v is not None},
         "created": datetime.now().isoformat(timespec="seconds"),
         "license": LICENSE_NOTE,
     }
-    (SOUNDS_DIR / f"{sound_id}.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
-    return meta
+    try:
+        return store.save(meta, src)
+    except Exception as e:
+        raise HTTPException(502, f"Sound was generated but could not be saved: {str(e)[:300]}")
 
 
 @app.get("/api/sounds")
 def list_sounds():
-    items = [m for p in SOUNDS_DIR.glob("*.json") if (m := _read_meta(p)) and (SOUNDS_DIR / m["file"]).exists()]
-    return sorted(items, key=lambda m: m["created"], reverse=True)
+    return sorted(store.list(), key=lambda m: m["created"], reverse=True)
 
 
 @app.delete("/api/sounds/{sound_id}")
 def delete_sound(sound_id: str):
     if not re.fullmatch(r"[A-Za-z0-9_\-]+", sound_id):
         raise HTTPException(400, "Bad id")
-    meta_path = SOUNDS_DIR / f"{sound_id}.json"
-    meta = _read_meta(meta_path)
-    if not meta:
+    if not store.delete(sound_id):
         raise HTTPException(404, "Sound not found")
-    (SOUNDS_DIR / meta["file"]).unlink(missing_ok=True)
-    meta_path.unlink(missing_ok=True)
     return {"deleted": sound_id}
 
 
-app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
+if isinstance(store, LocalStore):
+    app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
 app.mount("/", StaticFiles(directory=BASE_DIR / "static", html=True), name="static")
 
 if __name__ == "__main__":

@@ -2,3 +2,4 @@ fastapi>=0.110
 uvicorn>=0.29
 gradio_client>=1.3
 python-dotenv>=1.0
+vercel>=0.12

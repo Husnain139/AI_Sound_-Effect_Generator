@@ -34,3 +34,14 @@ Phir `.env` mein `API_NAME` (jaise `/generate`) aur `MODEL_CHOICE` (jaise SFX wa
 - Space ZeroGPU pe chalti hai. Free account ka daily GPU quota limited hai; khatam ho jaye to "quota" error aayega. PRO account mein zyada quota milta hai.
 - Har sound ke sath ek `.json` file save hoti hai (prompt, date, model, license). Copyright claim aaye to yahi proof hai.
 - License: Stability AI Community License. $1M se kam annual revenue tak commercial use free hai; details: stability.ai/license
+
+## Vercel pe deploy
+
+1. Repo ko Vercel mein import karo. `app.py` khud detect ho jata hai.
+2. Vercel dashboard > **Storage** > **Create** > **Blob**, access **Public** rakho, aur store ko is project se connect karo. Sounds wahan save hongi, kyunki Vercel ki disk read-only hai.
+3. Project > Settings > **Environment Variables** mein `HF_TOKEN` daalo (zarurat ho to `SPACE_ID`, `API_NAME`, `MODEL_CHOICE` bhi).
+4. Redeploy karo.
+
+Blob store connect na ho to app start par hi clear error degi. Local pe Blob token na ho to sounds pehle ki tarah `sounds/` folder mein jati hain.
+
+Note: deployed app pe login nahi hai. Jis ke paas URL hai woh sounds bana aur delete kar sakta hai, aur tumhara HF GPU quota use hoga.
