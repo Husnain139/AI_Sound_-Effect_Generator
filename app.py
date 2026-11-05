@@ -1,13 +1,14 @@
 """
 SFX Studio — local web app for generating sound effects.
 
-The browser talks to this FastAPI server; the server calls the Stable Audio 3
+The browser talks to this FastAPI server; the server calls the MOSS-SoundEffect v2.0
 Space on Hugging Face (via gradio_client) with your HF token, then saves every
 generated sound + a small JSON record (prompt, model, date, license) via storage.py
 (Vercel Blob when a store is connected, otherwise ./sounds).
 """
 
 import os
+import random
 import re
 import threading
 from datetime import datetime
@@ -24,7 +25,7 @@ from storage import LocalStore, make_store
 load_dotenv()
 
 HF_TOKEN = os.getenv("HF_TOKEN") or None
-SPACE_ID = os.getenv("SPACE_ID", "stabilityai/stable-audio-3")
+SPACE_ID = os.getenv("SPACE_ID", "OpenMOSS-Team/MOSS-SoundEffect-v2.0")
 API_NAME = os.getenv("API_NAME") or None          # e.g. "/generate" — leave empty to auto-detect
 MODEL_CHOICE = os.getenv("MODEL_CHOICE") or None  # e.g. "small-sfx" — leave empty to auto-pick an SFX model
 
@@ -32,7 +33,7 @@ BASE_DIR = Path(__file__).parent
 SOUNDS_DIR = BASE_DIR / "sounds"
 store = make_store(SOUNDS_DIR)
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg", ".m4a"}
-LICENSE_NOTE = "Generated with Stable Audio 3 (Stability AI Community License — see stability.ai/license)"
+LICENSE_NOTE = "Generated with MOSS-SoundEffect v2.0 (Apache-2.0 license)"
 
 _client = None
 _endpoint = None
@@ -95,7 +96,9 @@ def _build_kwargs(params: list, prompt: str, duration: float) -> dict:
 
         if "negative" in key:
             continue  # keep the Space's default
-        if not prompt_set and re.search(r"prompt|text|description", key):
+        if re.search(r"\bseed\b", key):
+            kwargs[name] = random.randint(0, 2**31 - 1)  # Space default seed is fixed, so every prompt would repeat
+        elif not prompt_set and re.search(r"prompt|text|description", key):
             kwargs[name] = prompt
             prompt_set = True
         elif re.search(r"duration|seconds|length", key):
@@ -159,7 +162,7 @@ app = FastAPI(title="SFX Studio")
 
 class GenerateRequest(BaseModel):
     prompt: str = Field(min_length=3, max_length=400)
-    duration: float = Field(default=3, ge=0.5, le=30)
+    duration: float = Field(default=3, ge=1, le=30)
 
 
 @app.post("/api/generate")

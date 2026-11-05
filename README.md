@@ -1,10 +1,10 @@
 # SFX Studio
 
-Local web app: prompt likho → Hugging Face (Stable Audio 3 Space) pe sound generate hoti hai → tumhare computer ke `sounds/` folder mein save ho jati hai.
+Local web app: prompt likho → Hugging Face (MOSS-SoundEffect v2.0 Space) pe sound generate hoti hai → tumhare computer ke `sounds/` folder mein save ho jati hai.
 
 ## Setup
 
-1. huggingface.co pe login karo, `stabilityai/stable-audio-3-small-sfx` model page pe jaa ke license **Agree** karo.
+1. huggingface.co pe login karo (model: `OpenMOSS-Team/MOSS-SoundEffect-v2.0`, koi license agree nahi karna).
 2. huggingface.co/settings/tokens se ek **Read** token banao.
 3. Terminal mein:
 
@@ -33,7 +33,7 @@ Phir `.env` mein `API_NAME` (jaise `/generate`) aur `MODEL_CHOICE` (jaise SFX wa
 
 - Space ZeroGPU pe chalti hai. Free account ka daily GPU quota limited hai; khatam ho jaye to "quota" error aayega. PRO account mein zyada quota milta hai.
 - Har sound ke sath ek `.json` file save hoti hai (prompt, date, model, license). Copyright claim aaye to yahi proof hai.
-- License: Stability AI Community License. $1M se kam annual revenue tak commercial use free hai; details: stability.ai/license
+- License: Apache-2.0 (MOSS-SoundEffect v2.0). Commercial use allowed.
 
 ## Render pe deploy
 
