@@ -4,5 +4,5 @@ from dotenv import load_dotenv
 from gradio_client import Client
 
 load_dotenv()
-client = Client(os.getenv("SPACE_ID", "OpenMOSS-Team/MOSS-SoundEffect-v2.0"), token=os.getenv("HF_TOKEN") or None)
+client = Client(os.getenv("SPACE_ID", "stabilityai/stable-audio-3"), token=os.getenv("HF_TOKEN") or None)
 client.view_api()
