@@ -17,7 +17,7 @@ PREFIX = "sounds/"
 class LocalStore:
     def __init__(self, directory: Path):
         self.dir = directory
-        self.dir.mkdir(exist_ok=True)
+        self.dir.mkdir(parents=True, exist_ok=True)
 
     def save(self, meta: dict, audio: Path) -> dict:
         shutil.copy(audio, self.dir / meta["file"])
@@ -96,4 +96,8 @@ def make_store(local_dir: Path):
             "No Vercel Blob store connected. Create a public Blob store in the Vercel dashboard "
             "(Storage tab) and connect it to this project."
         )
+    if os.getenv("SOUNDS_DIR"):
+        return LocalStore(Path(os.environ["SOUNDS_DIR"]))
+    if os.getenv("RENDER"):
+        print("[sfx-studio] WARNING: no BLOB_READ_WRITE_TOKEN or SOUNDS_DIR set; sounds are lost on every restart.")
     return LocalStore(local_dir)

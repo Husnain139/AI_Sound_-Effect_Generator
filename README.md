@@ -35,13 +35,16 @@ Phir `.env` mein `API_NAME` (jaise `/generate`) aur `MODEL_CHOICE` (jaise SFX wa
 - Har sound ke sath ek `.json` file save hoti hai (prompt, date, model, license). Copyright claim aaye to yahi proof hai.
 - License: Stability AI Community License. $1M se kam annual revenue tak commercial use free hai; details: stability.ai/license
 
-## Vercel pe deploy
+## Render pe deploy
 
-1. Repo ko Vercel mein import karo. `app.py` khud detect ho jata hai.
-2. Vercel dashboard > **Storage** > **Create** > **Blob**, access **Public** rakho, aur store ko is project se connect karo. Sounds wahan save hongi, kyunki Vercel ki disk read-only hai.
-3. Project > Settings > **Environment Variables** mein `HF_TOKEN` daalo (zarurat ho to `SPACE_ID`, `API_NAME`, `MODEL_CHOICE` bhi).
-4. Redeploy karo.
+1. render.com pe **New > Blueprint** chuno aur yeh GitHub repo do. `render.yaml` se service khud ban jayegi (free plan).
+2. Render poochega to `HF_TOKEN` daalo.
+3. Sounds kahan save hon:
+   - **Free plan:** Render ki disk har restart pe saaf hoti hai. Is liye vercel.com pe ek **Public** Blob store banao, uska `BLOB_READ_WRITE_TOKEN` copy karke Render ke env vars mein daalo.
+   - **Paid plan:** `render.yaml` mein `disk` wala hissa uncomment karo, `BLOB_READ_WRITE_TOKEN` hata do, aur `SOUNDS_DIR=/var/data/sounds` set karo.
 
-Blob store connect na ho to app start par hi clear error degi. Local pe Blob token na ho to sounds pehle ki tarah `sounds/` folder mein jati hain.
+Dono mein se kuch set na ho to app chalti rahegi, lekin har restart pe sounds gum ho jayengi (logs mein WARNING aayegi). Free instance 15 minute idle rehne pe so jata hai; pehli request pe jagne mein thoda waqt lagta hai.
+
+`vercel.json` repo mein hai, Render use ignore karta hai.
 
 Note: deployed app pe login nahi hai. Jis ke paas URL hai woh sounds bana aur delete kar sakta hai, aur tumhara HF GPU quota use hoga.

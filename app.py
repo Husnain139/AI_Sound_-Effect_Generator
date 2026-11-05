@@ -216,7 +216,7 @@ def delete_sound(sound_id: str):
 
 
 if isinstance(store, LocalStore):
-    app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
+    app.mount("/sounds", StaticFiles(directory=store.dir), name="sounds")
 app.mount("/", StaticFiles(directory=BASE_DIR / "static", html=True), name="static")
 
 if __name__ == "__main__":
