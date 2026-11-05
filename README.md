@@ -4,7 +4,7 @@ Local web app: prompt likho → Hugging Face (Stable Audio 3 Space) pe sound gen
 
 ## Setup
 
-1. huggingface.co pe login karo, `stabilityai/stable-audio-3-small-sfx` model page pe jaa ke license **Agree** karo.
+1. huggingface.co pe login karo, `stabilityai/stable-audio-3-medium` model page pe jaa ke license **Agree** karo.
 2. huggingface.co/settings/tokens se ek **Read** token banao.
 3. Terminal mein:
 

@@ -26,7 +26,7 @@ load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN") or None
 SPACE_ID = os.getenv("SPACE_ID", "stabilityai/stable-audio-3")
 API_NAME = os.getenv("API_NAME") or None          # e.g. "/generate" — leave empty to auto-detect
-MODEL_CHOICE = os.getenv("MODEL_CHOICE") or None  # e.g. "small-sfx" — leave empty to auto-pick an SFX model
+MODEL_CHOICE = os.getenv("MODEL_CHOICE") or "medium"  # Stable Audio 3 Medium (2B); "small-sfx" / "small-music" also work
 
 BASE_DIR = Path(__file__).parent
 SOUNDS_DIR = BASE_DIR / "sounds"
