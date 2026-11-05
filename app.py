@@ -174,7 +174,7 @@ def generate(req: GenerateRequest):
     except Exception as e:
         msg = str(e)
         low = msg.lower()
-        if "quota" in low or "zerogpu" in low:
+        if "quota" in low:
             raise HTTPException(429, "Hugging Face GPU quota used up for now. Try again later, or use a PRO token.")
         if "401" in msg or "unauthorized" in low or "gated" in low:
             raise HTTPException(401, "Hugging Face refused the token. Check HF_TOKEN in .env.")
