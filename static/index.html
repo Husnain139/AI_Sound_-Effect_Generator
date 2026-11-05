@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SFX Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #E7ECEF;
+    --surface: #F6F8F9;
+    --ink: #15222E;
+    --muted: #5A6874;
+    --line: #C8D1D8;
+    --accent: #2F45C8;
+    --accent-ink: #FFFFFF;
+    --wave-idle: #9AA8B4;
+    --danger: #B3261E;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #121A21;
+      --surface: #1A242D;
+      --ink: #E4EAEF;
+      --muted: #8D9BA7;
+      --line: #2B3843;
+      --accent: #8F9EFF;
+      --accent-ink: #0E1530;
+      --wave-idle: #4C5C6A;
+      --danger: #FF8A80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 16px/1.5 var(--body);
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+
+  h1 {
+    font: 700 1.1rem/1 var(--display);
+    margin: 0 0 32px;
+    color: var(--muted);
+  }
+
+  .composer label { display: block; font-weight: 600; margin-bottom: 8px; }
+  textarea {
+    width: 100%;
+    min-height: 140px;
+    resize: vertical;
+    padding: 0 0 12px;
+    border: 0;
+    border-bottom: 2px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    font: 500 clamp(1.6rem, 4.5vw, 2.4rem)/1.2 var(--display);
+  }
+  textarea::placeholder { color: var(--wave-idle); }
+  textarea:focus { outline: none; border-bottom-color: var(--accent); }
+
+  .ideas { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 28px; padding: 0; list-style: none; }
+  .ideas button {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font: 500 0.875rem/1 var(--body);
+    cursor: pointer;
+  }
+  .ideas button:hover { color: var(--ink); border-color: var(--ink); }
+
+  .controls { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .duration { display: flex; align-items: center; gap: 12px; flex: 1 1 260px; }
+  .duration input { flex: 1; accent-color: var(--accent); }
+  .duration output { font-variant-numeric: tabular-nums; min-width: 3.5ch; font-weight: 600; }
+
+  .primary {
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding: 14px 26px;
+    font: 600 1rem/1 var(--body);
+    cursor: pointer;
+  }
+  .primary:disabled { opacity: .55; cursor: progress; }
+
+  .status { min-height: 1.5em; margin: 14px 0 0; color: var(--muted); font-size: .95rem; }
+  .status.error { color: var(--danger); }
+
+  .library { margin-top: 56px; }
+  .library h2 { font: 700 1.4rem/1.2 var(--display); margin: 0 0 4px; }
+  .library .hint { color: var(--muted); margin: 0 0 20px; font-size: .95rem; }
+
+  .sound {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 6px 16px;
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+  }
+  .play {
+    grid-row: span 2;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .play[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .play svg { width: 18px; height: 18px; }
+  .wave { width: 100%; height: 48px; display: block; cursor: pointer; }
+  .meta { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .meta p { margin: 0; flex: 1 1 240px; }
+  .meta .len { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .9rem; }
+  .meta a, .meta .link {
+    color: var(--accent);
+    background: none; border: 0; padding: 0;
+    font: 600 .9rem/1.5 var(--body);
+    cursor: pointer; text-decoration: none;
+  }
+  .meta .link.delete { color: var(--muted); }
+  .empty { color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
+
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>SFX Studio</h1>
+
+  <section class="composer">
+    <label for="prompt">Describe the sound</label>
+    <textarea id="prompt" maxlength="400" placeholder="A rubber duck squeaks twice, then a tiny splash"></textarea>
+
+    <ul class="ideas" aria-label="Prompt ideas">
+      <li><button type="button">Cartoon boing, springy rubber bounce</button></li>
+      <li><button type="button">Fast whoosh for a scene transition</button></li>
+      <li><button type="button">Old wooden door creaking open slowly</button></li>
+      <li><button type="button">Footsteps on gravel, walking calmly</button></li>
+      <li><button type="button">Magic sparkle chime, bright and short</button></li>
+      <li><button type="button">Deep thunder rumble in the distance</button></li>
+      <li><button type="button">Goose honking angrily</button></li>
+    </ul>
+
+    <div class="controls">
+      <div class="duration">
+        <label for="duration">Length</label>
+        <input id="duration" type="range" min="1" max="15" step="0.5" value="3">
+        <output id="durationOut" for="duration">3s</output>
+      </div>
+      <button id="generate" class="primary" type="button">Generate sound</button>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="library" aria-labelledby="libTitle">
+    <h2 id="libTitle">Your sounds</h2>
+    <p class="hint">Saved on this computer in the sounds folder, each with a record of its prompt and license.</p>
+    <div id="list"></div>
+  </section>
+</main>
+
+<template id="soundTpl">
+  <article class="sound">
+    <button class="play" type="button" aria-pressed="false" aria-label="Play">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+    </button>
+    <canvas class="wave" aria-hidden="true"></canvas>
+    <div class="meta">
+      <p class="prompt"></p>
+      <span class="len"></span>
+      <a class="download" download>Download</a>
+      <button class="link delete" type="button">Delete</button>
+    </div>
+  </article>
+</template>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const promptEl = $("#prompt"), durEl = $("#duration"), durOut = $("#durationOut");
+const genBtn = $("#generate"), statusEl = $("#status"), listEl = $("#list");
+const PLAY_ICON = '<path d="M7 4.5v15l13-7.5z"/>';
+const PAUSE_ICON = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+
+let audioCtx;
+let current = null; // { audio, row, raf }
+
+durEl.addEventListener("input", () => durOut.textContent = `${durEl.value}s`);
+document.querySelectorAll(".ideas button").forEach(b =>
+  b.addEventListener("click", () => { promptEl.value = b.textContent; promptEl.focus(); }));
+promptEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) generate();
+});
+genBtn.addEventListener("click", generate);
+
+function setStatus(text, isError = false) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle("error", isError);
+}
+
+async function generate() {
+  const prompt = promptEl.value.trim();
+  if (prompt.length < 3) { setStatus("Write a few words about the sound first.", true); promptEl.focus(); return; }
+
+  genBtn.disabled = true;
+  const started = Date.now();
+  const tick = setInterval(() => {
+    const s = Math.round((Date.now() - started) / 1000);
+    setStatus(`Generating… ${s}s. The first sound can take up to a minute while the GPU wakes up.`);
+  }, 500);
+
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, duration: Number(durEl.value) })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Server error ${res.status}`);
+    clearInterval(tick);
+    setStatus("Generated. It’s at the top of your sounds.");
+    const empty = $(".empty", listEl);
+    if (empty) empty.remove();
+    listEl.prepend(renderSound(data));
+  } catch (err) {
+    clearInterval(tick);
+    setStatus(err.message, true);
+  } finally {
+    genBtn.disabled = false;
+  }
+}
+
+function renderSound(s) {
+  const row = $("#soundTpl").content.firstElementChild.cloneNode(true);
+  $(".prompt", row).textContent = s.prompt;
+  $(".len", row).textContent = `${s.duration}s`;
+  const dl = $(".download", row);
+  dl.href = s.url; dl.setAttribute("download", s.file);
+
+  const audio = new Audio(s.url);
+  audio.preload = "none";
+  const canvas = $(".wave", row);
+  const playBtn = $(".play", row);
+  row._peaks = null;
+
+  playBtn.addEventListener("click", () => toggle(row, audio));
+  canvas.addEventListener("click", e => {
+    if (!audio.duration) { toggle(row, audio); return; }
+    const r = canvas.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+    if (audio.paused) toggle(row, audio);
+  });
+  audio.addEventListener("ended", () => stop());
+  $(".delete", row).addEventListener("click", async () => {
+    if (!confirm(`Delete “${s.prompt}”?`)) return;
+    if (current && current.row === row) stop();
+    const res = await fetch(`/api/sounds/${encodeURIComponent(s.id)}`, { method: "DELETE" });
+    if (res.ok) { row.remove(); if (!listEl.children.length) showEmpty(); }
+  });
+
+  loadPeaks(s.url).then(p => { row._peaks = p; drawWave(canvas, p, 0); });
+  new ResizeObserver(() => drawWave(canvas, row._peaks, current && current.row === row ? progress(audio) : 0)).observe(canvas);
+  return row;
+}
+
+function progress(audio) { return audio.duration ? audio.currentTime / audio.duration : 0; }
+
+function toggle(row, audio) {
+  if (current && current.audio === audio) {
+    if (audio.paused) { audio.play(); setIcon(row, true); loop(); }
+    else { audio.pause(); setIcon(row, false); cancelAnimationFrame(current.raf); }
+    return;
+  }
+  stop();
+  current = { audio, row, raf: 0 };
+  audio.play();
+  setIcon(row, true);
+  loop();
+}
+
+function loop() {
+  if (!current) return;
+  const { audio, row } = current;
+  drawWave($(".wave", row), row._peaks, progress(audio));
+  current.raf = requestAnimationFrame(loop);
+}
+
+function stop() {
+  if (!current) return;
+  cancelAnimationFrame(current.raf);
+  current.audio.pause();
+  current.audio.currentTime = 0;
+  setIcon(current.row, false);
+  drawWave($(".wave", current.row), current.row._peaks, 0);
+  current = null;
+}
+
+function setIcon(row, playing) {
+  const btn = $(".play", row);
+  btn.setAttribute("aria-pressed", String(playing));
+  btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+  $("svg", btn).innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+}
+
+async function loadPeaks(url, bars = 160) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const buf = await (await fetch(url)).arrayBuffer();
+    const decoded = await audioCtx.decodeAudioData(buf);
+    const data = decoded.getChannelData(0);
+    const step = Math.max(1, Math.floor(data.length / bars));
+    const peaks = [];
+    for (let i = 0; i < bars; i++) {
+      let max = 0;
+      for (let j = i * step; j < Math.min((i + 1) * step, data.length); j++) max = Math.max(max, Math.abs(data[j]));
+      peaks.push(max);
+    }
+    const top = Math.max(...peaks) || 1;
+    return peaks.map(p => p / top);
+  } catch { return null; }
+}
+
+function drawWave(canvas, peaks, played) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w) return;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  const css = getComputedStyle(document.documentElement);
+  const idle = css.getPropertyValue("--wave-idle").trim();
+  const on = css.getPropertyValue("--accent").trim();
+  const list = peaks || Array(80).fill(0.08);
+  const gap = 2, bw = Math.max(1, w / list.length - gap);
+  list.forEach((p, i) => {
+    const x = i * (bw + gap);
+    const bh = Math.max(2, p * h);
+    ctx.fillStyle = x / w < played ? on : idle;
+    ctx.fillRect(x, (h - bh) / 2, bw, bh);
+  });
+}
+
+function showEmpty() {
+  listEl.innerHTML = '<p class="empty">No sounds yet. Describe one above and press Generate sound.</p>';
+}
+
+async function loadLibrary() {
+  try {
+    const sounds = await (await fetch("/api/sounds")).json();
+    if (!sounds.length) return showEmpty();
+    sounds.forEach(s => listEl.append(renderSound(s)));
+  } catch { setStatus("Couldn’t load saved sounds. Is the server running?", true); }
+}
+loadLibrary();
+</script>
+</body>
+</html>
